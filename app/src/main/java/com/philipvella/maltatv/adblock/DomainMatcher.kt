@@ -40,12 +40,14 @@ class DomainMatcher private constructor(private val domains: Set<String>) {
             for (e in entries) Hosts.normalizeDomainEntry(e)?.let { set += it }
             return DomainMatcher(set)
         }
+
+        /** For sets already produced by [BlocklistParser] (entries are validated there). */
+        internal fun ofValidated(set: Set<String>): DomainMatcher = DomainMatcher(set)
     }
 }
 
 /** Host-name helpers shared by the parser, matcher and exception lists. */
 object Hosts {
-    private val LABEL = Regex("^[a-z0-9_]([a-z0-9_-]{0,61}[a-z0-9])?$")
     private val IPV4 = Regex("^\\d{1,3}(\\.\\d{1,3}){3}$")
 
     /** Lower-cases, trims, strips a trailing dot and IPv6 brackets. Null if empty. */
@@ -66,11 +68,37 @@ object Hosts {
      */
     fun normalizeDomainEntry(entry: String?): String? {
         val h = normalize(entry) ?: return null
-        if (h.length > 253 || '.' !in h || Hosts.isIpLiteral(h)) return null
-        val labels = h.split('.')
-        if (labels.any { !LABEL.matches(it) }) return null
-        // Reject all-numeric TLD (e.g. partial IPs like "1.2.3")
-        if (labels.last().all { it.isDigit() }) return null
-        return h
+        return if (isValidDomain(h)) h else null
+    }
+
+    /**
+     * Single-pass check (no regex/allocation; called ~80k times while loading the list):
+     * at least two labels of 1-63 chars from [a-z0-9_-], labels don't start with '-' or end with
+     * '-'/'_', and the last label isn't all digits (rejects IPs and partial IPs).
+     */
+    fun isValidDomain(h: String): Boolean {
+        val n = h.length
+        if (n == 0 || n > 253) return false
+        var labelStart = 0
+        var dots = 0
+        var allDigits = true
+        for (i in 0..n) {
+            if (i == n || h[i] == '.') {
+                val len = i - labelStart
+                if (len == 0 || len > 63) return false
+                if (h[labelStart] == '-') return false
+                val last = h[i - 1]
+                if (last == '-' || last == '_') return false
+                if (i == n) return dots >= 1 && !allDigits
+                dots++
+                labelStart = i + 1
+                allDigits = true
+                continue
+            }
+            val c = h[i]
+            if (c in '0'..'9') continue
+            if (c in 'a'..'z' || c == '-' || c == '_') allDigits = false else return false
+        }
+        return false
     }
 }

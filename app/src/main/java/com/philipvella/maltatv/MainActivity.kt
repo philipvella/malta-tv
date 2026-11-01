@@ -446,8 +446,8 @@ class MainActivity : Activity() {
             BlocklistStore.Source.DOWNLOADED -> "downloaded " +
                 android.text.format.DateFormat.getDateFormat(this).format(java.util.Date(AdBlocker.updatedAtMillis))
             BlocklistStore.Source.BUNDLED -> "built-in copy"
-            BlocklistStore.Source.NONE -> "not loaded"
-        }
+            BlocklistStore.Source.NONE -> "not loaded yet"
+        } + if (AdBlocker.loadMillis >= 0) ", loaded in %.1f s".format(AdBlocker.loadMillis / 1000.0) else ""
 
         val items = mutableListOf<Pair<String, () -> Unit>>()
         items += "Auto full screen on channel change: ${onOff(autoFs)}" to {

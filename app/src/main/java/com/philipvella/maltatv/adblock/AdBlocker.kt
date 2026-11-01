@@ -41,6 +41,8 @@ object AdBlocker {
     @Volatile private var matcher: DomainMatcher = DomainMatcher.EMPTY
     @Volatile var source: BlocklistStore.Source = BlocklistStore.Source.NONE; private set
     @Volatile var updatedAtMillis: Long = 0L; private set
+    /** How long the initial list load took (shown in Settings as a diagnostic). */
+    @Volatile var loadMillis: Long = -1L; private set
     @Volatile var exceptions: AdblockExceptions = AdblockExceptions.NONE; private set
     @Volatile var enabled: Boolean = true; private set
     @Volatile private var pageHost: String? = null
@@ -78,8 +80,10 @@ object AdBlocker {
         )
         store = s
         executor.execute {
+            val t0 = android.os.SystemClock.elapsedRealtime()
             val loaded = s.loadInitial()
             publish(loaded)
+            loadMillis = android.os.SystemClock.elapsedRealtime() - t0
             debug("Loaded ${loaded.matcher.size} domains from ${loaded.source}")
             main.post(onReady)
             val age = s.cacheAgeMillis(System.currentTimeMillis())

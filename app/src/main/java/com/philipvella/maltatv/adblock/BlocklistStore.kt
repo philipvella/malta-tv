@@ -68,7 +68,7 @@ class BlocklistStore(
     }
 
     private fun parse(input: InputStream): DomainMatcher =
-        input.bufferedReader(Charsets.UTF_8).use { DomainMatcher.of(BlocklistParser.parse(it).domains) }
+        input.bufferedReader(Charsets.UTF_8).use { DomainMatcher.ofValidated(BlocklistParser.parse(it).domains) }
 
     /** Fails the read once more than [limit] bytes arrive, so a bad response can't exhaust memory. */
     class LimitedInputStream(input: InputStream, private val limit: Long) : FilterInputStream(input) {

@@ -23,12 +23,12 @@ class BlocklistParserTest {
             ::  ipv6sink.com
             """.trimIndent()
         )
-        assertEquals(listOf("ads.example.com", "tracker.example.net", "one.com", "two.com", "ipv6sink.com"), r.domains)
+        assertEquals(listOf("ads.example.com", "tracker.example.net", "one.com", "two.com", "ipv6sink.com"), r.domains.toList())
     }
 
     @Test fun plainDomainsFormat() {
         val r = parse("ads.example.com\n\n# comment\nmetrics.example.org\n")
-        assertEquals(listOf("ads.example.com", "metrics.example.org"), r.domains)
+        assertEquals(listOf("ads.example.com", "metrics.example.org"), r.domains.toList())
     }
 
     @Test fun easyListRulesAreNotTreatedAsDomains() {
@@ -53,12 +53,12 @@ class BlocklistParserTest {
 
     @Test fun hostsLinesPointingAtRealIpsAreSkipped() {
         val r = parse("93.184.216.34 example.com\n0.0.0.0 ads.com\n")
-        assertEquals(listOf("ads.com"), r.domains)
+        assertEquals(listOf("ads.com"), r.domains.toList())
         assertEquals(1, r.skipped)
     }
 
     @Test fun invalidHostnamesAreSkipped() {
         val r = parse("0.0.0.0 -bad.com\n0.0.0.0 com\n0.0.0.0 ok.com\nbad_label-.com\n")
-        assertEquals(listOf("ok.com"), r.domains)
+        assertEquals(listOf("ok.com"), r.domains.toList())
     }
 }

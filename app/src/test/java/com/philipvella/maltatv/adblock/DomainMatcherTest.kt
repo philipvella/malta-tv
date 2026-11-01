@@ -71,4 +71,17 @@ class DomainMatcherTest {
         assertNull(Hosts.normalizeDomainEntry("1.2.3"))
         assertNull(Hosts.normalizeDomainEntry("a b.com"))
     }
+
+    @Test fun isValidDomainEdgeCases() {
+        assertTrue(Hosts.isValidDomain("a.co"))
+        assertTrue(Hosts.isValidDomain("_dmarc.example.com"))
+        assertTrue(Hosts.isValidDomain("123.example.com"))
+        assertFalse(Hosts.isValidDomain("example.com-"))
+        assertFalse(Hosts.isValidDomain("example_.com"))
+        assertFalse(Hosts.isValidDomain("a..b.com"))
+        assertFalse(Hosts.isValidDomain(".a.com"))
+        assertFalse(Hosts.isValidDomain("1.2.3.4"))
+        assertFalse(Hosts.isValidDomain("a".repeat(64) + ".com"))
+        assertFalse(Hosts.isValidDomain("UPPER.com")) // callers normalise first
+    }
 }

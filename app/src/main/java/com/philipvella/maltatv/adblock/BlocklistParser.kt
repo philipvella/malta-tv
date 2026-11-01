@@ -13,7 +13,7 @@ import java.io.BufferedReader
  */
 object BlocklistParser {
 
-    data class Result(val domains: List<String>, val skipped: Int)
+    data class Result(val domains: Set<String>, val skipped: Int)
 
     private val SINKS = setOf("0.0.0.0", "127.0.0.1", "::", "::0", "::1", "0")
     private val LOCAL_NAMES = setOf(
@@ -25,10 +25,12 @@ object BlocklistParser {
     private val COSMETIC_MARKERS = listOf("##", "#@#", "#?#", "#$#", "#%#")
     private val NETWORK_MARKERS = listOf("|", "@@", "\$", "^", "/", "*", "=", "?")
 
+    /** Returns validated, normalised domains (insertion-ordered, de-duplicated). */
     fun parse(reader: BufferedReader): Result {
-        val out = ArrayList<String>(100_000)
+        val out = LinkedHashSet<String>(200_000)
         var skipped = 0
-        reader.forEachLine { raw ->
+        while (true) {
+            val raw = reader.readLine() ?: break
             when (val r = parseLine(raw)) {
                 null -> {}
                 LineResult.Skipped -> skipped++
@@ -41,6 +43,19 @@ object BlocklistParser {
     sealed class LineResult {
         object Skipped : LineResult()
         data class Domains(val domains: List<String>) : LineResult()
+    }
+
+    /** Whitespace split without regex (this runs for every line of an ~80k-line file). */
+    private fun tokenize(line: String): List<String> {
+        val out = ArrayList<String>(2)
+        var start = -1
+        for (i in 0..line.length) {
+            val ws = i == line.length || line[i] == ' ' || line[i] == '\t'
+            if (ws) {
+                if (start >= 0) { out += line.substring(start, i); start = -1 }
+            } else if (start < 0) start = i
+        }
+        return out
     }
 
     /** Returns null for blank/comment lines, Skipped for unsupported or invalid lines. */
@@ -56,7 +71,7 @@ object BlocklistParser {
         if (line.isEmpty()) return null
         // Network-filter syntax, checked after the comment is removed (comments may hold URLs).
         if (NETWORK_MARKERS.any { it in line }) return LineResult.Skipped
-        val tokens = line.split(Regex("\\s+"))
+        val tokens = tokenize(line)
 
         val candidates = when {
             tokens.size >= 2 && tokens[0] in SINKS -> tokens.drop(1)
