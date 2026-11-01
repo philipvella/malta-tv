@@ -49,7 +49,8 @@ pick the wrong element or not find the player at all.
 
 Ads and trackers loaded by the web pages are blocked **before they download**, using the
 [StevenBlack/hosts](https://github.com/StevenBlack/hosts) unified list (adware + malware,
-MIT licensed, ~78k domains). A copy is built into the app and a fresh one is downloaded
+MIT licensed, ~78k domains), plus a few ad servers seen on the built-in stations that the list
+misses (currently `ads.netnews.com.mt`, NET's ad server). A copy is built into the app and a fresh one is downloaded
 weekly in the background; if a download fails the previous list keeps working.
 
 How it works: every request the page makes passes through `WebViewClient.shouldInterceptRequest`

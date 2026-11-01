@@ -56,6 +56,19 @@ class BlockDecisionTest {
         assertFalse(b.isAllowed("cdn.adnet.com"))
     }
 
+    @Test fun extraBlockedDomainsAreBlockedEvenWhenNotInTheDownloadedList() {
+        val extra = DomainMatcher.of(listOf("ads.netnews.com.mt"))
+        fun b(req: String, ex: AdblockExceptions = AdblockExceptions.NONE) =
+            BlockDecision.shouldBlock(req, "netondemand.mt", false, true, DomainMatcher.EMPTY, ex, extra)
+        assertTrue(b("ads.netnews.com.mt"))
+        assertTrue(b("cdn.ads.netnews.com.mt"))
+        assertFalse(b("netnews.com.mt"))           // the news site itself is not blocked
+        assertFalse(b("www.netnews.com.mt"))
+        // exceptions still win
+        assertFalse(b("ads.netnews.com.mt", AdblockExceptions(disabledSites = listOf("netondemand.mt"))))
+        assertFalse(b("ads.netnews.com.mt", AdblockExceptions(allowedDomains = listOf("ads.netnews.com.mt"))))
+    }
+
     @Test fun invalidExceptionEntriesAreIgnored() {
         val ex = AdblockExceptions(disabledSites = listOf("", "com", "*.x.com"), allowedDomains = listOf("||a.com^"))
         assertTrue(ex.disabledSites.isEmpty())

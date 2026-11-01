@@ -33,6 +33,14 @@ object AdBlocker {
     private const val UPDATE_INTERVAL_MS = 7L * 24 * 60 * 60 * 1000
     private const val TAG = "AdBlocker"
 
+    /**
+     * Ad servers seen on the built-in stations that the downloaded list doesn't cover.
+     * Kept separate so list updates never drop them; site/domain exceptions still apply.
+     */
+    val EXTRA_BLOCKED: DomainMatcher = DomainMatcher.of(listOf(
+        "ads.netnews.com.mt", // NET (netondemand.mt) ad server
+    ))
+
     private const val PREFS = "adblock"
     private const val KEY_ENABLED = "enabled"
     private const val KEY_DISABLED_SITES = "disabled_sites"
@@ -131,7 +139,7 @@ object AdBlocker {
     }
 
     private fun decide(host: String?, isMainFrame: Boolean): WebResourceResponse? {
-        val block = BlockDecision.shouldBlock(host, pageHost, isMainFrame, enabled, matcher, exceptions)
+        val block = BlockDecision.shouldBlock(host, pageHost, isMainFrame, enabled, matcher, exceptions, EXTRA_BLOCKED)
         if (!block) return null
         blockedOnPage.incrementAndGet()
         val h = Hosts.normalize(host)!!

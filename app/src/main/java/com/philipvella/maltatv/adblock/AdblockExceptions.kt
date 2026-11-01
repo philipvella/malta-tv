@@ -42,11 +42,12 @@ object BlockDecision {
         enabled: Boolean,
         blocklist: DomainMatcher,
         exceptions: AdblockExceptions,
+        extraBlocked: DomainMatcher = DomainMatcher.EMPTY,
     ): Boolean {
         if (!enabled || isMainFrame) return false          // never block the page the user opened
         if (requestHost == null) return false
         if (exceptions.isSiteDisabled(pageHost)) return false
         if (exceptions.isAllowed(requestHost)) return false
-        return blocklist.matches(requestHost)
+        return blocklist.matches(requestHost) || extraBlocked.matches(requestHost)
     }
 }
