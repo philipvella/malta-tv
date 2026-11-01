@@ -15,11 +15,29 @@ android {
         versionName = "1.0.0"
     }
 
+    // Release signing key comes ONLY from environment variables (GitHub Actions secrets).
+    // Nothing secret is stored in this public repository.
+    val keystorePath = System.getenv("SIGNING_KEYSTORE_PATH")
+    val keystorePassword = System.getenv("SIGNING_PASSWORD")
+    val hasReleaseKey = !keystorePath.isNullOrBlank() && !keystorePassword.isNullOrBlank()
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = file(keystorePath!!)
+                storePassword = keystorePassword
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: "maltatv"
+                keyPassword = keystorePassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Signed with the debug key so the release APK is installable as-is (sideloading).
-            signingConfig = signingConfigs.getByName("debug")
+            // Without the secret key (forks, local builds) fall back to the debug key so the APK
+            // is still installable — but it can't update an officially-signed install.
+            signingConfig = signingConfigs.getByName(if (hasReleaseKey) "release" else "debug")
         }
     }
 
