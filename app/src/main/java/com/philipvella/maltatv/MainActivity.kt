@@ -657,7 +657,7 @@ class MainActivity : Activity() {
   var C='mtv-fill';
   if(!document.getElementById('mtv-fill-style')){
     var s=document.createElement('style');s.id='mtv-fill-style';
-    s.textContent='.mtv-fill{position:fixed!important;left:0!important;top:0!important;right:auto!important;bottom:auto!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;border:0!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important;transform:none!important}html.mtv-filled,html.mtv-filled body{overflow:hidden!important}';
+    s.textContent='.mtv-fill{position:fixed!important;left:0!important;top:0!important;right:auto!important;bottom:auto!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;border:0!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important;transform:none!important}html.mtv-filled,html.mtv-filled body{overflow:hidden!important}.mtv-fill-anc{transform:none!important;filter:none!important;perspective:none!important;contain:none!important;will-change:auto!important;backdrop-filter:none!important;z-index:2147483647!important}';
     (document.head||document.documentElement).appendChild(s);
   }
   function size(e){var r=e.getBoundingClientRect();return {w:r.width,h:r.height,a:r.width*r.height};}
@@ -669,6 +669,7 @@ class MainActivity : Activity() {
   }
   if(!best)return 'none';
   best.classList.add(C);document.documentElement.classList.add('mtv-filled');window.scrollTo(0,0);
+  for(var a=best.parentElement;a&&a!==document.documentElement;a=a.parentElement){a.classList.add('mtv-fill-anc');}
   try{if(best.tagName==='VIDEO'&&best.paused){var p=best.play();if(p&&p.catch)p.catch(function(){});}}catch(e){}
   try{var q=best.requestFullscreen?best.requestFullscreen():(best.webkitRequestFullscreen?best.webkitRequestFullscreen():null);if(q&&q.catch)q.catch(function(){});}catch(e){}
   return best.tagName;
@@ -676,6 +677,7 @@ class MainActivity : Activity() {
 
         private const val UNDO_FILL_JS = """
 (function(){document.querySelectorAll('.mtv-fill').forEach(function(e){e.classList.remove('mtv-fill');});
+document.querySelectorAll('.mtv-fill-anc').forEach(function(e){e.classList.remove('mtv-fill-anc');});
 document.documentElement.classList.remove('mtv-filled');})()"""
     }
 }
