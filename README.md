@@ -16,8 +16,8 @@
 | Station        | Web page                          |
 | -------------- | --------------------------------- |
 | Net Live       | https://netondemand.mt/           |
-| Net Schedule   | https://netondemand.mt/schedule   |
 | TVM Live       | https://tvmi.mt/live/2            |
+| ONE TV         | https://play.one.com.mt/tv        |
 
 ## Features
 

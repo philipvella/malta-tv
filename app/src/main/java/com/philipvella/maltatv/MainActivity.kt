@@ -40,8 +40,8 @@ class MainActivity : Activity() {
 
     private val defaultStations = listOf(
         Station("Net Live", "https://netondemand.mt/", true),
-        Station("Net Schedule", "https://netondemand.mt/schedule", true),
         Station("TVM Live", "https://tvmi.mt/live/2", true),
+        Station("ONE TV", "https://play.one.com.mt/tv", true),
     )
 
     private lateinit var webView: WebView
@@ -88,7 +88,7 @@ class MainActivity : Activity() {
         renderStations()
 
         val startUrl = savedInstanceState?.getString(KEY_URL)
-            ?: prefs.getString(KEY_LAST_URL, null)
+            ?: prefs.getString(KEY_LAST_URL, null)?.takeIf { last -> stations.any { it.url == last } }
             ?: stations.first().url
         openUrl(startUrl)
 
@@ -293,7 +293,7 @@ class MainActivity : Activity() {
     private fun showAddStationDialog() {
         val pad = dp(20)
         val nameInput = EditText(this).apply {
-            hint = "Name (e.g. ONE TV)"
+            hint = "Name (e.g. My Channel)"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
             setSingleLine()
         }
