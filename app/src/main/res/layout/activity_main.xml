@@ -46,8 +46,8 @@
             </HorizontalScrollView>
 
             <Button android:id="@+id/btnAdd" style="@style/BarButton" android:text="＋ Add station" />
-            <Button android:id="@+id/btnRefresh" style="@style/BarButton" android:text="🔴 Refresh" />
-            <Button android:id="@+id/btnFullscreen" style="@style/BarButton" android:text="🟢 Full screen" />
+            <Button android:id="@+id/btnRefresh" style="@style/BarButton" android:drawableStart="@drawable/dot_red" android:drawablePadding="8dp" android:text="Refresh" />
+            <Button android:id="@+id/btnFullscreen" style="@style/BarButton" android:drawableStart="@drawable/dot_green" android:drawablePadding="8dp" android:text="Full screen" />
             <Button android:id="@+id/btnExit" style="@style/BarButton" android:layout_marginEnd="0dp" android:text="✕ Exit" />
         </LinearLayout>
 
