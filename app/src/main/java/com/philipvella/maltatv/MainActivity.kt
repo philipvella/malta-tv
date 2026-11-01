@@ -51,6 +51,7 @@ class MainActivity : Activity() {
     private lateinit var progress: ProgressBar
     private lateinit var stationList: LinearLayout
     private lateinit var videoFullscreen: ViewGroup
+    private lateinit var pointer: PointerOverlay
 
     private val prefs by lazy { getSharedPreferences("malta_tv", MODE_PRIVATE) }
     private var stations = mutableListOf<Station>()
@@ -73,8 +74,10 @@ class MainActivity : Activity() {
         progress = findViewById(R.id.progress)
         stationList = findViewById(R.id.stationList)
         videoFullscreen = findViewById(R.id.videoFullscreen)
+        pointer = findViewById(R.id.pointer)
 
         setupWebView()
+        setupPointer()
 
         findViewById<Button>(R.id.btnRefresh).setOnClickListener { webView.reload() }
         findViewById<Button>(R.id.btnFullscreen).setOnClickListener { setFullscreen(true) }
@@ -147,12 +150,88 @@ class MainActivity : Activity() {
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                 videoFullscreen.visibility = View.VISIBLE
                 hideSystemBars(true)
+                pointer.show()
             }
 
             override fun onHideCustomView() {
                 exitVideoFullscreen()
             }
         }
+    }
+
+    // ---------------------------------------------------------------- Pointer
+
+    /** The pointer is active whenever the web page (or its fullscreen video) has the remote's focus. */
+    private fun pointerActive() = customView != null || webView.hasFocus()
+
+    private fun setupPointer() {
+        pointer.host = object : PointerOverlay.Host {
+            override fun pointerTarget(): View? = when {
+                customView != null -> videoFullscreen
+                webView.hasFocus() -> webView
+                else -> null
+            }
+
+            @Suppress("DEPRECATION")
+            override fun scrollAt(x: Float, y: Float, dy: Int, callback: (Boolean) -> Unit) {
+                if (customView != null) { callback(true); return }
+                val loc = IntArray(2).also { webView.getLocationOnScreen(it) }
+                val ploc = IntArray(2).also { pointer.getLocationOnScreen(it) }
+                val scale = webView.scale.takeIf { it > 0f } ?: resources.displayMetrics.density
+                val cx = (x + ploc[0] - loc[0]) / scale
+                val cy = (y + ploc[1] - loc[1]) / scale
+                val cdy = dy / scale
+                // Scroll the nearest scrollable element under the pointer, else the page itself.
+                val js = """
+                    (function(x,y,dy){
+                      var e=document.elementFromPoint(x,y);
+                      while(e&&e!==document.body&&e!==document.documentElement){
+                        var s=getComputedStyle(e);
+                        if((s.overflowY=='auto'||s.overflowY=='scroll')&&e.scrollHeight>e.clientHeight){
+                          var b=e.scrollTop;e.scrollTop+=dy;if(e.scrollTop!==b)return true;
+                        }
+                        e=e.parentElement;
+                      }
+                      var w=window.scrollY;window.scrollBy(0,dy);return window.scrollY!==w;
+                    })($cx,$cy,$cdy)
+                """.trimIndent()
+                webView.evaluateJavascript(js) { result -> callback(result == "true") }
+            }
+
+            override fun onPointerExitTop() {
+                if (isFullscreen || customView != null) return
+                pointer.hide()
+                val active = (0 until stationList.childCount)
+                    .map { stationList.getChildAt(it) }
+                    .firstOrNull { it.isSelected } ?: stationList.getChildAt(0)
+                active?.requestFocus()
+            }
+        }
+
+        webView.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) pointer.show() else if (customView == null) pointer.hide()
+        }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // Remote colour buttons: RED = refresh, GREEN = toggle full screen
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_PROG_RED -> {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    webView.reload()
+                    toast("Refreshing…")
+                }
+                return true
+            }
+            KeyEvent.KEYCODE_PROG_GREEN -> {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    if (customView != null) exitVideoFullscreen() else setFullscreen(!isFullscreen)
+                }
+                return true
+            }
+        }
+        if (pointerActive() && pointer.handleKey(event)) return true
+        return super.dispatchKeyEvent(event)
     }
 
     private fun openUrl(url: String) {
@@ -290,7 +369,7 @@ class MainActivity : Activity() {
         hideSystemBars(on)
         if (on) {
             webView.requestFocus()
-            toast("Press BACK or MENU to show the controls")
+            toast("Use the arrows to move the pointer, OK to click. BACK or MENU shows the controls")
         } else {
             findViewById<View>(R.id.btnFullscreen).requestFocus()
         }
@@ -304,6 +383,7 @@ class MainActivity : Activity() {
         customViewCallback?.onCustomViewHidden()
         customViewCallback = null
         hideSystemBars(isFullscreen)
+        if (webView.hasFocus()) pointer.show() else pointer.hide()
     }
 
     @Suppress("DEPRECATION")

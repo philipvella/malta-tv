@@ -22,8 +22,12 @@
 - **Station buttons** — switch between the web pages above with the remote.
 - **＋ Add station** — add any web page as your own station (saved on the device).
   Long-press a custom (★) station to remove it.
-- **⟳ Refresh** — reload the current page.
-- **⛶ Full screen** — hide the controls. Press **BACK** or **MENU** to bring them back.
+- **🔴 Refresh** — reload the current page. Also on the remote's **RED** button.
+- **🟢 Full screen** — hide the controls. Also toggled by the remote's **GREEN** button;
+  **BACK** or **MENU** brings the controls back.
+- **On-screen mouse pointer** — move into the web page (press DOWN from the buttons) and a
+  pointer appears: arrow keys move it (faster the longer you hold), **OK** clicks,
+  pushing against the top/bottom edge scrolls the page. It hides itself after 3 seconds.
 - **✕ Exit** — close the app.
 - The address strip always shows which web page is loaded.
 - Remembers the last station you watched.
@@ -53,8 +57,6 @@ Every push to `main` is built by GitHub Actions; pushing a `v*` tag publishes a 
 
 - Whether a page plays in the app depends on the website itself (geo-restrictions,
   logins, or player changes on their side may affect playback).
-- Navigating *inside* a web page with a TV remote depends on how well the website
-  supports keyboard/D-pad focus. An air-mouse or a remote with a pointer works best.
 
 ## License
 

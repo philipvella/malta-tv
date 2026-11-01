@@ -46,8 +46,8 @@
             </HorizontalScrollView>
 
             <Button android:id="@+id/btnAdd" style="@style/BarButton" android:text="＋ Add station" />
-            <Button android:id="@+id/btnRefresh" style="@style/BarButton" android:text="⟳ Refresh" />
-            <Button android:id="@+id/btnFullscreen" style="@style/BarButton" android:text="⛶ Full screen" />
+            <Button android:id="@+id/btnRefresh" style="@style/BarButton" android:text="🔴 Refresh" />
+            <Button android:id="@+id/btnFullscreen" style="@style/BarButton" android:text="🟢 Full screen" />
             <Button android:id="@+id/btnExit" style="@style/BarButton" android:layout_marginEnd="0dp" android:text="✕ Exit" />
         </LinearLayout>
 
@@ -98,4 +98,10 @@
         android:layout_height="match_parent"
         android:background="#FF000000"
         android:visibility="gone" />
+
+    <!-- Virtual mouse pointer for the TV remote (drawn above everything) -->
+    <com.philipvella.maltatv.PointerOverlay
+        android:id="@+id/pointer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 </FrameLayout>
