@@ -1,0 +1,9 @@
+<resources>
+    <color name="bg">#FF0B0F14</color>
+    <color name="bar">#E6141A22</color>
+    <color name="btn">#FF242C38</color>
+    <color name="btn_active">#FFC8102E</color>
+    <color name="btn_focus">#FFFFFFFF</color>
+    <color name="text">#FFF2F4F7</color>
+    <color name="text_dim">#FF9AA4B2</color>
+</resources>

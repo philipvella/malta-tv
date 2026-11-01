@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Control bar (hidden in full screen) -->
+        <LinearLayout
+            android:id="@+id/controlBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/bar"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="🌐 Malta TV"
+                android:textColor="@color/text"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <HorizontalScrollView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/stationList"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <Button android:id="@+id/btnAdd" style="@style/BarButton" android:text="＋ Add station" />
+            <Button android:id="@+id/btnRefresh" style="@style/BarButton" android:text="⟳ Refresh" />
+            <Button android:id="@+id/btnFullscreen" style="@style/BarButton" android:text="⛶ Full screen" />
+            <Button android:id="@+id/btnExit" style="@style/BarButton" android:layout_marginEnd="0dp" android:text="✕ Exit" />
+        </LinearLayout>
+
+        <!-- Address strip: shows the web page being loaded -->
+        <LinearLayout
+            android:id="@+id/urlBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FF0F141B"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:id="@+id/urlText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+
+            <ProgressBar
+                android:id="@+id/progress"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="160dp"
+                android:layout_height="4dp"
+                android:max="100"
+                android:progressTint="@color/btn_active" />
+        </LinearLayout>
+
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- Holder for HTML5 video fullscreen (WebChromeClient custom view) -->
+    <FrameLayout
+        android:id="@+id/videoFullscreen"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FF000000"
+        android:visibility="gone" />
+</FrameLayout>

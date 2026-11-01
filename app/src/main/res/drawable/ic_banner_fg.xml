@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp" android:height="180dp"
+    android:viewportWidth="320" android:viewportHeight="180">
+    <!-- globe -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="5" android:fillColor="#00000000"
+        android:pathData="M90,90m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0 M50,90h80 M90,50c-20,24 -20,56 0,80 M90,50c20,24 20,56 0,80 M58,68h64 M58,112h64" />
+    <!-- "TV" -->
+    <path android:fillColor="#FFFFFF" android:pathData="M160,62h60v12h-24v46h-12v-46h-24z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M222,62h13l15,42l15,-42h13l-22,58h-12z" />
+</vector>
