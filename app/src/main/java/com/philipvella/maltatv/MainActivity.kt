@@ -42,6 +42,7 @@ class MainActivity : Activity() {
         Station("TVM", "https://tvmi.mt/live/2", true),
         Station("NET", "https://netondemand.mt/", true),
         Station("ONE", "https://play.one.com.mt/tv", true),
+        Station("SMASH", "https://smashmalta.com/", true),
     )
 
     private lateinit var webView: WebView

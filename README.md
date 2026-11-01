@@ -18,6 +18,7 @@
 | TVM            | https://tvmi.mt/live/2            |
 | NET            | https://netondemand.mt/           |
 | ONE            | https://play.one.com.mt/tv        |
+| SMASH          | https://smashmalta.com/           |
 
 ## Features
 
