@@ -639,6 +639,20 @@ class MainActivity : Activity() {
         webView.onResume()
     }
 
+    // WebView keeps playing media in the background; stop it when the app leaves the screen
+    // (e.g. switching to another app), and resume when it comes back.
+    override fun onStop() {
+        super.onStop()
+        webView.evaluateJavascript(PAUSE_MEDIA_JS, null)
+        webView.pauseTimers()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        webView.resumeTimers()
+        webView.evaluateJavascript(RESUME_MEDIA_JS, null)
+    }
+
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         webView.destroy()
@@ -676,6 +690,14 @@ class MainActivity : Activity() {
   try{var q=best.requestFullscreen?best.requestFullscreen():(best.webkitRequestFullscreen?best.webkitRequestFullscreen():null);if(q&&q.catch)q.catch(function(){});}catch(e){}
   return best.tagName;
 })()"""
+
+        private const val PAUSE_MEDIA_JS = """
+(function(){document.querySelectorAll('video,audio').forEach(function(m){
+  if(!m.paused){m.setAttribute('data-mtv-resume','1');try{m.pause();}catch(e){}}});})()"""
+
+        private const val RESUME_MEDIA_JS = """
+(function(){document.querySelectorAll('[data-mtv-resume]').forEach(function(m){
+  m.removeAttribute('data-mtv-resume');try{var p=m.play();if(p&&p.catch)p.catch(function(){});}catch(e){}});})()"""
 
         private const val UNDO_FILL_JS = """
 (function(){document.querySelectorAll('.mtv-fill').forEach(function(e){e.classList.remove('mtv-fill');});
