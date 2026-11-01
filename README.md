@@ -1,3 +1,5 @@
+<p align="center"><img src="art/banner-1536x864.png" alt="Malta TV" width="480"></p>
+
 # 🌐 Malta TV — a free, open-source, web-based Android TV app
 
 **Malta TV** is a free and public Android TV app that opens Maltese TV broadcasters'
@@ -57,6 +59,11 @@ Every push to `main` is built by GitHub Actions; pushing a `v*` tag publishes a 
 
 - Whether a page plays in the app depends on the website itself (geo-restrictions,
   logins, or player changes on their side may affect playback).
+
+## Artwork
+
+The app icon and TV banner in [`art/`](art) were generated with AI (Figma AI image generation)
+and resized into the Android resource folders.
 
 ## License
 
