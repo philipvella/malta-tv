@@ -147,7 +147,7 @@ object AdBlocker {
     )
 
     /** Hosts blocked on the current page, most recent first (for the "allow a domain" picker). */
-    fun recentBlocked(): List<String> = synchronized(recentBlockedHosts) { recentBlockedHosts.reversed() }
+    fun recentBlocked(): List<String> = synchronized(recentBlockedHosts) { recentBlockedHosts.toList() }.asReversed()
 
     /**
      * Service workers fetch outside any WebView, and ServiceWorkerController is app-wide (one
