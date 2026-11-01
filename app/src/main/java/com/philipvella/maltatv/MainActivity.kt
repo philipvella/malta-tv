@@ -120,6 +120,8 @@ class MainActivity : Activity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
+        // Chrome DevTools inspection (chrome://inspect) for debug builds only.
+        if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
         with(webView.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
