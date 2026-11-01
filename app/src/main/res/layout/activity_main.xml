@@ -48,7 +48,10 @@
             <Button android:id="@+id/btnAdd" style="@style/BarButton" android:text="＋ Add station" />
             <Button android:id="@+id/btnRefresh" style="@style/BarButton" android:drawableStart="@drawable/dot_red" android:drawablePadding="8dp" android:text="Refresh" />
             <Button android:id="@+id/btnFullscreen" style="@style/BarButton" android:drawableStart="@drawable/dot_green" android:drawablePadding="8dp" android:text="Full screen" />
-            <Button android:id="@+id/btnExit" style="@style/BarButton" android:layout_marginEnd="0dp" android:text="✕ Exit" />
+            <ImageButton android:id="@+id/btnSettings" style="@style/IconButton"
+                android:src="@drawable/ic_settings" android:contentDescription="Settings" />
+            <ImageButton android:id="@+id/btnExit" style="@style/IconButton" android:layout_marginEnd="0dp"
+                android:src="@drawable/ic_power" android:contentDescription="Exit" />
         </LinearLayout>
 
         <!-- Address strip: shows the web page being loaded -->

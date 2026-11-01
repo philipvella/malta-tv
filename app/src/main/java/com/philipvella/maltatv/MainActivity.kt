@@ -6,6 +6,8 @@ import android.app.AlertDialog
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
@@ -16,6 +18,7 @@ import android.view.WindowManager
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -25,6 +28,9 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import com.philipvella.maltatv.adblock.AdBlocker
+import com.philipvella.maltatv.adblock.BlocklistStore
+import com.philipvella.maltatv.adblock.Hosts
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -58,6 +64,12 @@ class MainActivity : Activity() {
     private var stations = mutableListOf<Station>()
     private var currentUrl: String? = null
     private var isFullscreen = false
+    private val handler = Handler(Looper.getMainLooper())
+
+    // "Auto full screen on channel change": retries until the page's player appears
+    private var autoFsToken = 0
+    private var autoFsPending = false
+    private var autoFsAttempts = 0
 
     // HTML5 <video> fullscreen support
     private var customView: View? = null
@@ -83,7 +95,8 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.btnRefresh).setOnClickListener { webView.reload() }
         findViewById<Button>(R.id.btnFullscreen).setOnClickListener { setFullscreen(true) }
         findViewById<Button>(R.id.btnAdd).setOnClickListener { showAddStationDialog() }
-        findViewById<Button>(R.id.btnExit).setOnClickListener { confirmExit() }
+        findViewById<View>(R.id.btnSettings).setOnClickListener { showSettings() }
+        findViewById<View>(R.id.btnExit).setOnClickListener { confirmExit() }
 
         stations = loadStations()
         renderStations()
@@ -91,7 +104,12 @@ class MainActivity : Activity() {
         val startUrl = savedInstanceState?.getString(KEY_URL)
             ?: prefs.getString(KEY_LAST_URL, null)?.takeIf { last -> stations.any { it.url == last } }
             ?: stations.first().url
-        openUrl(startUrl)
+        // Load the first page once the ad blocklist is ready (parsed off the main thread),
+        // so its first requests are filtered too. Don't wait more than 3 s.
+        var started = false
+        val start = Runnable { if (!started && !isDestroyed) { started = true; openUrl(startUrl) } }
+        AdBlocker.init(this) { start.run() }
+        handler.postDelayed(start, 3000)
 
         if (savedInstanceState == null) {
             stationList.post { stationList.getChildAt(0)?.requestFocus() }
@@ -119,6 +137,11 @@ class MainActivity : Activity() {
         }
 
         webView.webViewClient = object : WebViewClient() {
+            // Runs on a WebView IO thread. Returns an empty response for blocked ad/tracker
+            // requests and null (load normally) for everything else.
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                AdBlocker.shouldInterceptRequest(request)
+
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val scheme = request.url.scheme ?: return true
                 // Stay inside the app for normal web links; ignore intent:, market:, etc.
@@ -126,6 +149,7 @@ class MainActivity : Activity() {
             }
 
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                AdBlocker.onPageStarting(AdBlocker.hostOf(url))
                 urlText.text = "🌐 $url"
                 progress.visibility = View.VISIBLE
             }
@@ -133,6 +157,7 @@ class MainActivity : Activity() {
             override fun onPageFinished(view: WebView, url: String) {
                 urlText.text = "🌐 $url"
                 progress.visibility = View.INVISIBLE
+                if (autoFsPending && autoFsAttempts == 0) tryAutoFullscreen(autoFsToken)
             }
         }
 
@@ -224,6 +249,15 @@ class MainActivity : Activity() {
                 }
                 return true
             }
+            // Remote next / previous (media keys and channel P+ / P-) step through the stations
+            KeyEvent.KEYCODE_MEDIA_NEXT, KeyEvent.KEYCODE_CHANNEL_UP -> {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) switchStation(+1)
+                return true
+            }
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) switchStation(-1)
+                return true
+            }
             KeyEvent.KEYCODE_PROG_GREEN -> {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                     if (customView != null) exitVideoFullscreen() else setFullscreen(!isFullscreen)
@@ -235,11 +269,50 @@ class MainActivity : Activity() {
         return super.dispatchKeyEvent(event)
     }
 
-    private fun openUrl(url: String) {
+    /** [channelChange] = the user picked a station (button or next/previous key). */
+    private fun openUrl(url: String, channelChange: Boolean = false) {
         currentUrl = url
         prefs.edit().putString(KEY_LAST_URL, url).apply()
+        autoFsToken++
+        autoFsPending = channelChange && prefs.getBoolean(KEY_AUTO_FS, false)
+        autoFsAttempts = 0
         webView.loadUrl(url)
         highlightActiveStation()
+    }
+
+    private fun switchStation(delta: Int) {
+        if (customView != null) exitVideoFullscreen()
+        val i = stations.indexOfFirst { it.url == currentUrl }
+        val next = if (i < 0) 0 else Math.floorMod(i + delta, stations.size)
+        val station = stations[next]
+        openUrl(station.url, channelChange = true)
+        toast(station.name)
+        if (!isFullscreen) stationList.getChildAt(next)?.requestFocus()
+    }
+
+    // ---------------------------------------------------------------- Auto full screen
+
+    /**
+     * Best effort: finds the page's main video (or, if the player lives in another site's iframe,
+     * the largest player-sized iframe), asks for real full screen, and — since browsers refuse
+     * requestFullscreen() without a user gesture — also stretches it over the whole page.
+     * Retries for ~15 s because players are usually inserted after the page has loaded.
+     */
+    private fun tryAutoFullscreen(token: Int) {
+        if (token != autoFsToken || !autoFsPending) return
+        autoFsAttempts++
+        webView.evaluateJavascript(AUTO_FS_JS) { result ->
+            if (token != autoFsToken) return@evaluateJavascript
+            val found = result?.contains("VIDEO") == true || result?.contains("IFRAME") == true
+            when {
+                found -> {
+                    autoFsPending = false
+                    if (!isFullscreen && customView == null) setFullscreen(true, announce = false)
+                }
+                autoFsAttempts < 15 -> handler.postDelayed({ tryAutoFullscreen(token) }, 1000)
+                else -> autoFsPending = false
+            }
+        }
     }
 
     // ---------------------------------------------------------------- Stations
@@ -274,7 +347,7 @@ class MainActivity : Activity() {
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { marginEnd = dp(8) }
-                setOnClickListener { openUrl(station.url) }
+                setOnClickListener { openUrl(station.url, channelChange = true) }
                 if (!station.builtIn) {
                     setOnLongClickListener { confirmRemove(station); true }
                 }
@@ -360,17 +433,129 @@ class MainActivity : Activity() {
             .show()
     }
 
+    // ---------------------------------------------------------------- Settings
+
+    private fun onOff(b: Boolean) = if (b) "ON" else "OFF"
+
+    private fun showSettings() {
+        val site = AdBlocker.currentSite ?: AdBlocker.hostOf(currentUrl)
+        val autoFs = prefs.getBoolean(KEY_AUTO_FS, false)
+        val siteOff = site != null && AdBlocker.isSiteDisabled(site)
+        val ex = AdBlocker.exceptions
+        val sourceLabel = when (AdBlocker.source) {
+            BlocklistStore.Source.DOWNLOADED -> "downloaded " +
+                android.text.format.DateFormat.getDateFormat(this).format(java.util.Date(AdBlocker.updatedAtMillis))
+            BlocklistStore.Source.BUNDLED -> "built-in copy"
+            BlocklistStore.Source.NONE -> "not loaded"
+        }
+
+        val items = mutableListOf<Pair<String, () -> Unit>>()
+        items += "Auto full screen on channel change: ${onOff(autoFs)}" to {
+            prefs.edit().putBoolean(KEY_AUTO_FS, !autoFs).apply()
+            toast("Auto full screen ${onOff(!autoFs)}")
+        }
+        items += "Ad blocking (all sites): ${onOff(AdBlocker.enabled)}" to {
+            AdBlocker.setEnabled(!AdBlocker.enabled); webView.reload()
+        }
+        if (site != null) {
+            items += "Ad blocking on $site: ${onOff(!siteOff)}" to {
+                AdBlocker.setSiteDisabled(site, !siteOff)
+                toast(if (siteOff) "Ad blocking back ON for $site" else "Ad blocking OFF for $site")
+                webView.reload()
+            }
+        }
+        items += "Allow a blocked domain… (${AdBlocker.blockedCount} requests blocked on this page)" to {
+            showAllowDomain()
+        }
+        items += "Manage ad-block exceptions (${ex.disabledSites.size + ex.allowedDomains.size})" to {
+            showManageExceptions()
+        }
+        items += "Update blocklist now (${"%,d".format(AdBlocker.domainCount)} domains, $sourceLabel)" to {
+            toast("Updating blocklist…")
+            AdBlocker.updateNow { ok ->
+                toast(if (ok) "Blocklist updated: ${"%,d".format(AdBlocker.domainCount)} domains"
+                      else "Update failed — still using the current list")
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Settings")
+            .setItems(items.map { it.first }.toTypedArray()) { _, which -> items[which].second() }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    /** Pick from hosts blocked on this page, or type one, to never block it on any site. */
+    private fun showAllowDomain() {
+        val recent = AdBlocker.recentBlocked()
+        val entries = recent + "Type a domain…"
+        AlertDialog.Builder(this)
+            .setTitle(if (recent.isEmpty()) "Nothing blocked on this page" else "Always allow which domain?")
+            .setItems(entries.toTypedArray()) { _, which ->
+                if (which < recent.size) allowDomain(recent[which]) else typeDomainToAllow()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun typeDomainToAllow() {
+        val input = EditText(this).apply {
+            hint = "e.g. cdn.example.com"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            setSingleLine()
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Always allow a domain")
+            .setView(input)
+            .setPositiveButton("Allow", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val raw = input.text.toString().trim().let { t -> AdBlocker.hostOf(if ("://" in t) t else "https://$t") }
+                val domain = Hosts.normalizeDomainEntry(raw)
+                if (domain == null) input.error = "Enter a domain like cdn.example.com"
+                else { allowDomain(domain); dialog.dismiss() }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun allowDomain(domain: String) {
+        AdBlocker.setDomainAllowed(domain, true)
+        toast("$domain will no longer be blocked")
+        webView.reload()
+    }
+
+    private fun showManageExceptions() {
+        val ex = AdBlocker.exceptions
+        val rows = ex.disabledSites.map { "Blocking off on site: $it" to { AdBlocker.setSiteDisabled(it, false) } } +
+            ex.allowedDomains.map { "Always allowed: $it" to { AdBlocker.setDomainAllowed(it, false) } }
+        if (rows.isEmpty()) { toast("No exceptions yet"); return }
+        AlertDialog.Builder(this)
+            .setTitle("Select an exception to remove")
+            .setItems(rows.map { it.first }.toTypedArray()) { _, which ->
+                rows[which].second()
+                toast("Removed")
+                webView.reload()
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
     // ---------------------------------------------------------------- Full screen
 
-    private fun setFullscreen(on: Boolean) {
+    private fun setFullscreen(on: Boolean, announce: Boolean = true) {
         isFullscreen = on
+        if (!on) webView.evaluateJavascript(UNDO_FILL_JS, null)
         val vis = if (on) View.GONE else View.VISIBLE
         controlBar.visibility = vis
         urlBar.visibility = vis
         hideSystemBars(on)
         if (on) {
             webView.requestFocus()
-            toast("Use the arrows to move the pointer, OK to click. BACK or MENU shows the controls")
+            if (announce) toast("Use the arrows to move the pointer, OK to click. BACK or MENU shows the controls")
+            else toast("BACK shows the controls")
         } else {
             findViewById<View>(R.id.btnFullscreen).requestFocus()
         }
@@ -453,6 +638,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
         webView.destroy()
         super.onDestroy()
     }
@@ -464,5 +650,32 @@ class MainActivity : Activity() {
         private const val KEY_URL = "url"
         private const val KEY_LAST_URL = "last_url"
         private const val KEY_CUSTOM = "custom_stations"
+        private const val KEY_AUTO_FS = "auto_fullscreen"
+
+        private const val AUTO_FS_JS = """
+(function(){
+  var C='mtv-fill';
+  if(!document.getElementById('mtv-fill-style')){
+    var s=document.createElement('style');s.id='mtv-fill-style';
+    s.textContent='.mtv-fill{position:fixed!important;left:0!important;top:0!important;right:auto!important;bottom:auto!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;border:0!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important;transform:none!important}html.mtv-filled,html.mtv-filled body{overflow:hidden!important}';
+    (document.head||document.documentElement).appendChild(s);
+  }
+  function size(e){var r=e.getBoundingClientRect();return {w:r.width,h:r.height,a:r.width*r.height};}
+  var best=null,ba=0;
+  document.querySelectorAll('video').forEach(function(v){var z=size(v);if(z.w>=200&&z.h>=100&&z.a>ba){ba=z.a;best=v;}});
+  if(!best){
+    document.querySelectorAll('iframe').forEach(function(f){var z=size(f);var r=z.w/z.h;
+      if(z.w>=320&&z.h>=180&&r>1.2&&r<2.4&&z.a>ba){ba=z.a;best=f;}});
+  }
+  if(!best)return 'none';
+  best.classList.add(C);document.documentElement.classList.add('mtv-filled');window.scrollTo(0,0);
+  try{if(best.tagName==='VIDEO'&&best.paused){var p=best.play();if(p&&p.catch)p.catch(function(){});}}catch(e){}
+  try{var q=best.requestFullscreen?best.requestFullscreen():(best.webkitRequestFullscreen?best.webkitRequestFullscreen():null);if(q&&q.catch)q.catch(function(){});}catch(e){}
+  return best.tagName;
+})()"""
+
+        private const val UNDO_FILL_JS = """
+(function(){document.querySelectorAll('.mtv-fill').forEach(function(e){e.classList.remove('mtv-fill');});
+document.documentElement.classList.remove('mtv-filled');})()"""
     }
 }
