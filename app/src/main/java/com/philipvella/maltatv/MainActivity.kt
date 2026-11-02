@@ -66,6 +66,8 @@ class MainActivity : Activity() {
     private lateinit var pointer: PointerOverlay
     private lateinit var webFrame: ViewGroup
     private lateinit var splash: View
+    private lateinit var dock: ViewGroup
+    private val hideDockRunnable = Runnable { hideDock() }
     private var splashShownAt = 0L
     private var splashHiding = false
 
@@ -99,6 +101,7 @@ class MainActivity : Activity() {
         pointer = findViewById(R.id.pointer)
         webFrame = findViewById(R.id.webFrame)
         splash = findViewById(R.id.splash)
+        dock = findViewById(R.id.dock)
         // Rounded glass frame around the page: clip the WebView to the frame's rounded outline
         webFrame.outlineProvider = ViewOutlineProvider.BACKGROUND
         webFrame.clipToOutline = true
@@ -242,6 +245,13 @@ class MainActivity : Activity() {
                 webView.evaluateJavascript(js) { result -> callback(result == "true") }
             }
 
+            override fun onPointerExitBottom() {
+                if (isFullscreen || customView != null) return
+                pointer.hide()
+                showDock()
+                findViewById<View>(R.id.btnRefresh).requestFocus()
+            }
+
             override fun onPointerExitTop() {
                 if (isFullscreen || customView != null) return
                 pointer.hide()
@@ -263,11 +273,14 @@ class MainActivity : Activity() {
             if (event.action == KeyEvent.ACTION_UP) hideSplash(force = true)
             return true
         }
+        // Any key while the user is on the app's own controls (not pointing in the page) shows the dock
+        if (event.action == KeyEvent.ACTION_DOWN && (!webView.hasFocus() || dock.hasFocus())) showDock()
         // Remote colour buttons, in remote order:
         // RED = refresh, GREEN = toggle full screen, YELLOW = add station, BLUE = settings
         when (event.keyCode) {
             KeyEvent.KEYCODE_PROG_RED -> {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    flashDockButton(R.id.btnRefresh)
                     webView.reload()
                     toast("Refreshing…")
                 }
@@ -285,18 +298,19 @@ class MainActivity : Activity() {
             KeyEvent.KEYCODE_PROG_GREEN -> {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                     if (customView != null) exitVideoFullscreen() else setFullscreen(!isFullscreen)
+                    if (!isFullscreen) flashDockButton(R.id.btnFullscreen)
                 }
                 return true
             }
             KeyEvent.KEYCODE_PROG_YELLOW -> {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                    leaveFullscreenForDialog(); showAddStationDialog()
+                    leaveFullscreenForDialog(); flashDockButton(R.id.btnAdd); showAddStationDialog()
                 }
                 return true
             }
             KeyEvent.KEYCODE_PROG_BLUE -> {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                    leaveFullscreenForDialog(); showSettings()
+                    leaveFullscreenForDialog(); flashDockButton(R.id.btnSettings); showSettings()
                 }
                 return true
             }
@@ -601,6 +615,7 @@ class MainActivity : Activity() {
         webFrame.clipToOutline = !on
         if (on) webFrame.background = null else webFrame.setBackgroundResource(R.drawable.glass_frame)
         hideSystemBars(on)
+        if (on) hideDock(immediately = true) else showDock()
         if (on) {
             webView.requestFocus()
             if (announce) toast("Use the arrows to move the pointer, OK to click. BACK or MENU shows the controls")
@@ -614,6 +629,46 @@ class MainActivity : Activity() {
     private fun leaveFullscreenForDialog() {
         if (customView != null) webView.webChromeClient?.onHideCustomView()
         if (isFullscreen) setFullscreen(false, announce = false)
+    }
+
+    // ---------------------------------------------------------------- Colour-key dock
+
+    /** Shows the bottom dock (not in full screen) and restarts its auto-hide timer. */
+    private fun showDock() {
+        if (isFullscreen || customView != null || splash.visibility == View.VISIBLE) return
+        handler.removeCallbacks(hideDockRunnable)
+        handler.postDelayed(hideDockRunnable, DOCK_HIDE_MS)
+        if (dock.visibility == View.VISIBLE && dock.alpha == 1f) return
+        dock.animate().cancel()
+        if (dock.visibility != View.VISIBLE) { dock.alpha = 0f; dock.translationY = dp(24).toFloat() }
+        dock.visibility = View.VISIBLE
+        dock.animate().alpha(1f).translationY(0f).setDuration(220)
+            .setInterpolator(DecelerateInterpolator()).start()
+    }
+
+    private fun hideDock(immediately: Boolean = false) {
+        handler.removeCallbacks(hideDockRunnable)
+        if (dock.visibility != View.VISIBLE) return
+        // Don't strand the remote's focus on an invisible button: hand it to the active station
+        if (dock.hasFocus()) focusActiveStation()
+        dock.animate().cancel()
+        if (immediately) { dock.visibility = View.GONE; return }
+        dock.animate().alpha(0f).translationY(dp(24).toFloat()).setDuration(300)
+            .withEndAction { dock.visibility = View.GONE }.start()
+    }
+
+    /** Colour key pressed: show the dock and briefly light up the matching button. */
+    private fun flashDockButton(id: Int) {
+        showDock()
+        val b = findViewById<View>(id)
+        b.isPressed = true
+        handler.postDelayed({ b.isPressed = false }, 180)
+    }
+
+    private fun focusActiveStation() {
+        val active = (0 until stationList.childCount).map { stationList.getChildAt(it) }
+            .firstOrNull { it.isSelected } ?: stationList.getChildAt(0)
+        active?.requestFocus()
     }
 
     // ---------------------------------------------------------------- Splash
@@ -638,7 +693,8 @@ class MainActivity : Activity() {
         val wait = SPLASH_MIN_MS - (SystemClock.uptimeMillis() - splashShownAt)
         if (!force && wait > 0) { handler.postDelayed({ hideSplash() }, wait); return }
         splashHiding = true
-        splash.animate().alpha(0f).setDuration(450).withEndAction { splash.visibility = View.GONE }.start()
+        splash.animate().alpha(0f).setDuration(450)
+            .withEndAction { splash.visibility = View.GONE; showDock() }.start()
     }
 
     private fun exitVideoFullscreen() {
@@ -763,6 +819,7 @@ class MainActivity : Activity() {
         private const val KEY_URL = "url"
         private const val SPLASH_MIN_MS = 2000L
         private const val SPLASH_MAX_MS = 6000L
+        private const val DOCK_HIDE_MS = 4000L
         private const val KEY_LAST_URL = "last_url"
         private const val KEY_CUSTOM = "custom_stations"
         private const val KEY_AUTO_FS = "auto_fullscreen"

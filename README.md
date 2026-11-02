@@ -24,7 +24,11 @@
 
 - **Station buttons** — TVM, NET, ONE, SMASH. The remote's **next / previous** buttons
   (⏭ ⏮ or **P+ / P−**) step through the stations in order.
-- **Remote colour keys** — the buttons are in the same order as the keys on the remote:
+- **Remote colour-key dock** — a floating glass dock at the bottom of the screen holds the four
+  colour-key buttons, in the same order as the keys on the remote. It appears when you use the
+  remote on the app's controls (or press a colour key: the matching button lights up), and hides
+  itself after 4 seconds. To reach it with the arrows, move the pointer off the bottom of the page;
+  **UP** goes back into the page:
 
   | Key | Button | Does |
   |---|---|---|

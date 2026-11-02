@@ -60,11 +60,23 @@ What that means here:
 Colour tokens are in `res/values/colors.xml`. The styles and the `GlassDialog` theme are in
 `res/values/styles.xml`. Change a token rather than hard-coding a colour in a layout or in code.
 
-## Remote colour keys
+## Remote colour keys: the bottom dock
 
-The bar's buttons follow the remote's key order. **RED** Refresh, **GREEN** Full screen,
-**YELLOW** Add station, **BLUE** Settings, then Exit (icon only). A new action that gets a
-colour key must keep that order, show its bead, and be wired in `MainActivity.dispatchKeyEvent`.
+The colour-key actions live in a **floating glass dock** at the bottom centre (`@id/dock`), in the
+remote's key order: **RED** Refresh, **GREEN** Full screen, **YELLOW** Add station,
+**BLUE** Settings. Each button shows its glossy bead. The top bar holds only the logo, the
+stations and Exit (icon only). How the dock behaves:
+- `showDock()` is called on remote activity outside the page and on colour keys
+  (`flashDockButton`). It slides up and fades in.
+- `hideDock()` runs after `DOCK_HIDE_MS` (4 s) with no key presses. It hands focus back to the
+  active station first, so focus never lands on an invisible button.
+- It never shows in full screen or over HTML5 fullscreen video, and it sits under the
+  fullscreen video holder in z-order.
+- D-pad route: pushing the pointer off the bottom of the page (`onPointerExitBottom`) focuses
+  the dock. The dock buttons' `nextFocusUp` is the WebView.
+
+A new remote-key action goes in the dock in key order, with its bead and a
+`flashDockButton` call, wired in `MainActivity.dispatchKeyEvent`.
 
 ## Artwork (icon, banner, splash logo)
 

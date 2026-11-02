@@ -30,6 +30,8 @@ class PointerOverlay @JvmOverloads constructor(
         fun scrollAt(x: Float, y: Float, dy: Int, callback: (Boolean) -> Unit)
         /** Pointer pushed off the top of a page that can't scroll further up. */
         fun onPointerExitTop()
+        /** Pointer pushed off the bottom of a page that can't scroll further down. */
+        fun onPointerExitBottom() {}
     }
 
     var host: Host? = null
@@ -169,6 +171,7 @@ class PointerOverlay @JvmOverloads constructor(
             host?.scrollAt(px, py, amount) { scrolled ->
                 scrollPending = false
                 if (!scrolled && amount < 0 && py <= edge) host?.onPointerExitTop()
+                if (!scrolled && amount > 0 && py >= maxY - edge) host?.onPointerExitBottom()
             }
         }
 
