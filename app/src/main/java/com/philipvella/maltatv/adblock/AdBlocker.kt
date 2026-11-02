@@ -41,6 +41,14 @@ object AdBlocker {
         "ads.netnews.com.mt", // NET (netondemand.mt) ad server
     ))
 
+    /**
+     * Sites where blocking starts OFF (the user can turn it back on in Settings). TVM's player
+     * often stalls after its pre-roll, frozen on the last frame, when its analytics/tag-manager
+     * requests are blocked (tested on a Bravia, Nov 2026: 1 of 3 loads played with blocking on,
+     * 3 of 3 with it off). TVM's own adverts aren't on the blocklist anyway.
+     */
+    val DEFAULT_DISABLED_SITES: Set<String> = setOf("tvmi.mt")
+
     private const val PREFS = "adblock"
     private const val KEY_ENABLED = "enabled"
     private const val KEY_DISABLED_SITES = "disabled_sites"
@@ -76,7 +84,7 @@ object AdBlocker {
         val prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         enabled = prefs.getBoolean(KEY_ENABLED, true)
         exceptions = AdblockExceptions(
-            prefs.getStringSet(KEY_DISABLED_SITES, emptySet()).orEmpty(),
+            prefs.getStringSet(KEY_DISABLED_SITES, DEFAULT_DISABLED_SITES).orEmpty(),
             prefs.getStringSet(KEY_ALLOWED_DOMAINS, emptySet()).orEmpty(),
         )
         installServiceWorkerClient()

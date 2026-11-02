@@ -65,6 +65,10 @@ MIT licensed, ~78k domains), plus a few ad servers seen on the built-in stations
 misses (currently `ads.netnews.com.mt`, NET's ad server). A copy is built into the app and a fresh one is downloaded
 weekly in the background; if a download fails the previous list keeps working.
 
+**TVM starts with ad blocking off.** TVM's player often stalls after its pre-roll advert
+(frozen on the last frame) when its analytics requests are blocked. TVM's own adverts aren't on
+the list anyway. You can turn it on for `tvmi.mt` in ⚙ Settings.
+
 How it works: every request the page makes passes through `WebViewClient.shouldInterceptRequest`
 (and `ServiceWorkerClient` for service workers on Android 7+). If the request's host is on the list,
 or a subdomain of a listed domain, the app returns an empty response instead of fetching it.

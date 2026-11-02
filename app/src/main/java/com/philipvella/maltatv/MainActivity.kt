@@ -382,7 +382,7 @@ class MainActivity : Activity() {
                 tag = station.url
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { marginEnd = dp(10) }
+                ).apply { marginEnd = dp(8) }
                 setOnClickListener { openUrl(station.url, channelChange = true) }
                 if (!station.builtIn) {
                     setOnLongClickListener { confirmRemove(station); true }

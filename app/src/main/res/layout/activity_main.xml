@@ -31,8 +31,8 @@
 
             <ImageView
                 android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:layout_marginEnd="18dp"
+                android:layout_height="22dp"
+                android:layout_marginEnd="10dp"
                 android:adjustViewBounds="true"
                 android:contentDescription="Malta TV"
                 android:src="@drawable/splash_logo" />
@@ -41,11 +41,12 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:clipChildren="false"
                 android:clipToPadding="false"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:paddingStart="4dp"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:layout_marginEnd="6dp"
                 android:scrollbars="none">
 
                 <LinearLayout

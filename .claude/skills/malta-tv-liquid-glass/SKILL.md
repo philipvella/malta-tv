@@ -95,8 +95,10 @@ colour key must keep that order, show its bead, and be wired in `MainActivity.di
 ## Checklist for any UI change
 
 - [ ] Every new surface is one of the kit drawables, with no flat opaque `#…` backgrounds.
-- [ ] Focusable controls use `glass_button`/`glass_row` + `@animator/glass_focus`, and their
-      parents set `clipChildren="false"` so the 1.08× focus scale isn't cut off.
+- [ ] Focusable controls use `glass_button`/`glass_row` + `@animator/glass_focus`. Give them
+      room for the 1.08× focus swell with padding plus `clipToPadding="false"`. Never set
+      `clipChildren="false"` on a **scrolling** container (like the station strip), because the
+      scrolled-away buttons then draw over their neighbours.
 - [ ] Text is `@color/text` / `@color/text_dim`. Icons are white vectors. There's no emoji in chrome.
 - [ ] Dialogs use `AlertDialog.Builder(this)`, fields use the `glass` context, and notices use `toast()`.
 - [ ] Full screen still goes edge to edge (no frame, no margins, no clip).
