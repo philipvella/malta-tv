@@ -26,7 +26,14 @@ jobs:
       - name: Restore signing key from secrets
         env:
           SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: |
+          # A release (v* tag) must be signed with the stable release key, never the debug key:
+          # otherwise installed copies can't be updated in place.
+          if [[ "$GITHUB_REF" == refs/tags/v* ]] && { [ -z "$SIGNING_KEYSTORE_BASE64" ] || [ -z "$SIGNING_PASSWORD" ]; }; then
+            echo "::error::Release builds need both SIGNING_KEYSTORE_BASE64 and SIGNING_PASSWORD secrets"
+            exit 1
+          fi
           if [ -n "$SIGNING_KEYSTORE_BASE64" ]; then
             echo "$SIGNING_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
