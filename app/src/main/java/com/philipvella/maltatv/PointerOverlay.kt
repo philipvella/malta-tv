@@ -2,7 +2,6 @@ package com.philipvella.maltatv
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.os.SystemClock
@@ -49,12 +48,17 @@ class PointerOverlay @JvmOverloads constructor(
     private var scrollPending = false
 
     private val arrow = Path()
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; style = Paint.Style.FILL }
+    // Liquid Glass pointer: frosted white body with a top-down sheen, thin dark rim, soft shadow
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        shader = android.graphics.LinearGradient(0f, 0f, 0f, 20f * density * 1.6f,
+            0xFFFFFFFF.toInt(), 0xE6DCE3EC.toInt(), android.graphics.Shader.TileMode.CLAMP)
+    }
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 2f * density
+        color = 0xB3101418.toInt(); style = Paint.Style.STROKE; strokeWidth = 1.5f * density
         strokeJoin = Paint.Join.ROUND
     }
-    private val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x55000000; style = Paint.Style.FILL }
+    private val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x40000000; style = Paint.Style.FILL }
 
     init {
         isClickable = false

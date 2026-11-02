@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Liquid Glass focus: the focused control swells slightly, like glass flexing -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <set>
+            <objectAnimator android:propertyName="scaleX" android:valueTo="1.08" android:duration="160" android:interpolator="@android:interpolator/decelerate_quad" />
+            <objectAnimator android:propertyName="scaleY" android:valueTo="1.08" android:duration="160" android:interpolator="@android:interpolator/decelerate_quad" />
+            <objectAnimator android:propertyName="translationZ" android:valueTo="6dp" android:duration="160" />
+        </set>
+    </item>
+    <item>
+        <set>
+            <objectAnimator android:propertyName="scaleX" android:valueTo="1.0" android:duration="160" android:interpolator="@android:interpolator/decelerate_quad" />
+            <objectAnimator android:propertyName="scaleY" android:valueTo="1.0" android:duration="160" android:interpolator="@android:interpolator/decelerate_quad" />
+            <objectAnimator android:propertyName="translationZ" android:valueTo="0dp" android:duration="160" />
+        </set>
+    </item>
+</selector>

@@ -8,10 +8,15 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.text.InputType
+import android.view.ContextThemeWrapper
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewOutlineProvider
+import android.view.animation.DecelerateInterpolator
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
@@ -59,6 +64,10 @@ class MainActivity : Activity() {
     private lateinit var stationList: LinearLayout
     private lateinit var videoFullscreen: ViewGroup
     private lateinit var pointer: PointerOverlay
+    private lateinit var webFrame: ViewGroup
+    private lateinit var splash: View
+    private var splashShownAt = 0L
+    private var splashHiding = false
 
     private val prefs by lazy { getSharedPreferences("malta_tv", MODE_PRIVATE) }
     private var stations = mutableListOf<Station>()
@@ -88,6 +97,12 @@ class MainActivity : Activity() {
         stationList = findViewById(R.id.stationList)
         videoFullscreen = findViewById(R.id.videoFullscreen)
         pointer = findViewById(R.id.pointer)
+        webFrame = findViewById(R.id.webFrame)
+        splash = findViewById(R.id.splash)
+        // Rounded glass frame around the page: clip the WebView to the frame's rounded outline
+        webFrame.outlineProvider = ViewOutlineProvider.BACKGROUND
+        webFrame.clipToOutline = true
+        if (savedInstanceState == null) showSplash()
 
         setupWebView()
         setupPointer()
@@ -152,13 +167,14 @@ class MainActivity : Activity() {
 
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 AdBlocker.onPageStarting(AdBlocker.hostOf(url))
-                urlText.text = "🌐 $url"
+                urlText.text = url
                 progress.visibility = View.VISIBLE
             }
 
             override fun onPageFinished(view: WebView, url: String) {
-                urlText.text = "🌐 $url"
+                urlText.text = url
                 progress.visibility = View.INVISIBLE
+                hideSplash()
                 if (autoFsPending && autoFsAttempts == 0) tryAutoFullscreen(autoFsToken)
             }
         }
@@ -242,7 +258,13 @@ class MainActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        // Remote colour buttons: RED = refresh, GREEN = toggle full screen
+        // While the splash is up, any key (except BACK) just skips it
+        if (splash.visibility == View.VISIBLE && !splashHiding && event.keyCode != KeyEvent.KEYCODE_BACK) {
+            if (event.action == KeyEvent.ACTION_UP) hideSplash(force = true)
+            return true
+        }
+        // Remote colour buttons, in remote order:
+        // RED = refresh, GREEN = toggle full screen, YELLOW = add station, BLUE = settings
         when (event.keyCode) {
             KeyEvent.KEYCODE_PROG_RED -> {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
@@ -263,6 +285,18 @@ class MainActivity : Activity() {
             KeyEvent.KEYCODE_PROG_GREEN -> {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                     if (customView != null) exitVideoFullscreen() else setFullscreen(!isFullscreen)
+                }
+                return true
+            }
+            KeyEvent.KEYCODE_PROG_YELLOW -> {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    leaveFullscreenForDialog(); showAddStationDialog()
+                }
+                return true
+            }
+            KeyEvent.KEYCODE_PROG_BLUE -> {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    leaveFullscreenForDialog(); showSettings()
                 }
                 return true
             }
@@ -343,12 +377,12 @@ class MainActivity : Activity() {
     private fun renderStations() {
         stationList.removeAllViews()
         stations.forEach { station ->
-            val btn = Button(this, null, 0, R.style.BarButton).apply {
+            val btn = Button(this, null, 0, R.style.GlassButton).apply {
                 text = if (station.builtIn) station.name else "★ ${station.name}"
                 tag = station.url
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { marginEnd = dp(8) }
+                ).apply { marginEnd = dp(10) }
                 setOnClickListener { openUrl(station.url, channelChange = true) }
                 if (!station.builtIn) {
                     setOnLongClickListener { confirmRemove(station); true }
@@ -368,12 +402,12 @@ class MainActivity : Activity() {
 
     private fun showAddStationDialog() {
         val pad = dp(20)
-        val nameInput = EditText(this).apply {
+        val nameInput = EditText(glass).apply {
             hint = "Name (e.g. My Channel)"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
             setSingleLine()
         }
-        val urlInput = EditText(this).apply {
+        val urlInput = EditText(glass).apply {
             hint = "Web address (e.g. https://example.com/live)"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
             setSingleLine()
@@ -381,8 +415,9 @@ class MainActivity : Activity() {
         val form = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(pad, pad / 2, pad, 0)
-            addView(TextView(context).apply {
+            addView(TextView(glass).apply {
                 text = "Any web page can be a station. Enter its name and address."
+                setTextColor(getColor(R.color.text_dim))
             })
             addView(nameInput)
             addView(urlInput)
@@ -501,14 +536,18 @@ class MainActivity : Activity() {
     }
 
     private fun typeDomainToAllow() {
-        val input = EditText(this).apply {
+        val input = EditText(glass).apply {
             hint = "e.g. cdn.example.com"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
             setSingleLine()
         }
+        val box = LinearLayout(this).apply {
+            setPadding(dp(20), dp(4), dp(20), 0)
+            addView(input, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
         val dialog = AlertDialog.Builder(this)
             .setTitle("Always allow a domain")
-            .setView(input)
+            .setView(box)
             .setPositiveButton("Allow", null)
             .setNegativeButton("Cancel", null)
             .create()
@@ -553,6 +592,14 @@ class MainActivity : Activity() {
         val vis = if (on) View.GONE else View.VISIBLE
         controlBar.visibility = vis
         urlBar.visibility = vis
+        // In full screen the page goes edge to edge: no glass frame, margins or rounded clip
+        (webFrame.layoutParams as ViewGroup.MarginLayoutParams).apply {
+            val m = if (on) 0 else dp(20)
+            setMargins(m, if (on) 0 else dp(10), m, if (on) 0 else dp(16))
+        }.also { webFrame.layoutParams = it }
+        webFrame.setPadding(if (on) 0 else dp(1), if (on) 0 else dp(1), if (on) 0 else dp(1), if (on) 0 else dp(1))
+        webFrame.clipToOutline = !on
+        if (on) webFrame.background = null else webFrame.setBackgroundResource(R.drawable.glass_frame)
         hideSystemBars(on)
         if (on) {
             webView.requestFocus()
@@ -561,6 +608,37 @@ class MainActivity : Activity() {
         } else {
             findViewById<View>(R.id.btnFullscreen).requestFocus()
         }
+    }
+
+    /** Colour-key dialogs need the control bar's world: leave video / app full screen first. */
+    private fun leaveFullscreenForDialog() {
+        if (customView != null) webView.webChromeClient?.onHideCustomView()
+        if (isFullscreen) setFullscreen(false, announce = false)
+    }
+
+    // ---------------------------------------------------------------- Splash
+
+    private fun showSplash() {
+        splashShownAt = SystemClock.uptimeMillis()
+        splash.visibility = View.VISIBLE
+        val card = findViewById<View>(R.id.splashCard)
+        val credit = findViewById<View>(R.id.splashCredit)
+        card.alpha = 0f; card.scaleX = 0.9f; card.scaleY = 0.9f
+        card.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(700)
+            .setInterpolator(DecelerateInterpolator(2f)).start()
+        credit.alpha = 0f; credit.translationY = dp(12).toFloat()
+        credit.animate().alpha(1f).translationY(0f).setStartDelay(350).setDuration(600)
+            .setInterpolator(DecelerateInterpolator()).start()
+        handler.postDelayed({ hideSplash(force = true) }, SPLASH_MAX_MS)
+    }
+
+    /** Fades the splash out once the first page has loaded (shown for at least [SPLASH_MIN_MS]). */
+    private fun hideSplash(force: Boolean = false) {
+        if (splash.visibility != View.VISIBLE || splashHiding) return
+        val wait = SPLASH_MIN_MS - (SystemClock.uptimeMillis() - splashShownAt)
+        if (!force && wait > 0) { handler.postDelayed({ hideSplash() }, wait); return }
+        splashHiding = true
+        splash.animate().alpha(0f).setDuration(450).withEndAction { splash.visibility = View.GONE }.start()
     }
 
     private fun exitVideoFullscreen() {
@@ -660,10 +738,31 @@ class MainActivity : Activity() {
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
-    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+
+    /** Context for views built in code that live inside dialogs (fields, labels): glass-themed. */
+    private val glass by lazy { ContextThemeWrapper(this, R.style.GlassDialog) }
+
+    /** Glass toast: a floating dark-glass capsule near the bottom of the screen. */
+    @Suppress("DEPRECATION")
+    private fun toast(msg: String) {
+        val label = TextView(this).apply {
+            text = msg
+            textSize = 16f
+            setTextColor(getColor(R.color.text))
+            setBackgroundResource(R.drawable.glass_toast)
+            setPadding(dp(26), dp(13), dp(26), dp(13))
+        }
+        Toast(this).apply {
+            duration = Toast.LENGTH_LONG
+            view = label
+            setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, dp(40))
+        }.show()
+    }
 
     companion object {
         private const val KEY_URL = "url"
+        private const val SPLASH_MIN_MS = 2000L
+        private const val SPLASH_MAX_MS = 6000L
         private const val KEY_LAST_URL = "last_url"
         private const val KEY_CUSTOM = "custom_stations"
         private const val KEY_AUTO_FS = "auto_fullscreen"

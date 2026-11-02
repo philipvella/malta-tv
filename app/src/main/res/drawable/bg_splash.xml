@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash / launch environment: the same red as the launcher icon and TV banner -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <gradient android:angle="315" android:startColor="@color/malta_red_lit"
+                android:centerColor="@color/malta_red" android:endColor="@color/malta_red_deep" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <gradient android:type="radial" android:centerX="0.15" android:centerY="0.05"
+                android:gradientRadius="700dp" android:startColor="#59FF8FA3" android:endColor="#00FF8FA3" />
+        </shape>
+    </item>
+</layer-list>

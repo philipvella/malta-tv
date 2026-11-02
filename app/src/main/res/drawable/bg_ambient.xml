@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The environment the glass floats over: near-black with a Malta-red glow top-left
+     and a faint cool glow bottom-right, so translucent surfaces pick up colour. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><color android:color="@color/bg" /></item>
+    <item>
+        <shape>
+            <gradient android:type="radial" android:centerX="0.12" android:centerY="0.0"
+                android:gradientRadius="900dp" android:startColor="@color/ambient_red" android:endColor="#00000000" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <gradient android:type="radial" android:centerX="0.95" android:centerY="1.0"
+                android:gradientRadius="700dp" android:startColor="@color/ambient_cool" android:endColor="#00000000" />
+        </shape>
+    </item>
+</layer-list>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Interactive Liquid Glass (glass_field). focused = bright glass + white rim (the remote's focus),
+     selected = Malta-red tinted glass, rest = clear glass. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android" android:exitFadeDuration="150">
+    <item android:state_focused="true" android:state_selected="true">
+        <layer-list>
+            <item><shape><gradient android:angle="270" android:startColor="@color/glass_red_top" android:endColor="@color/glass_red_bottom" /><corners android:radius="14dp" /></shape></item>
+            <item><shape><gradient android:angle="270" android:startColor="#4DFFFFFF" android:centerColor="#00FFFFFF" android:centerY="0.5" android:endColor="#00FFFFFF" /><corners android:radius="14dp" /></shape></item>
+            <item><shape><stroke android:width="2dp" android:color="@color/glass_focus_rim" /><corners android:radius="14dp" /></shape></item>
+        </layer-list>
+    </item>
+    <item android:state_focused="true">
+        <layer-list>
+            <item><shape><gradient android:angle="270" android:startColor="@color/glass_focus_top" android:endColor="@color/glass_focus_bottom" /><corners android:radius="14dp" /></shape></item>
+            <item><shape><stroke android:width="2dp" android:color="@color/glass_focus_rim" /><corners android:radius="14dp" /></shape></item>
+        </layer-list>
+    </item>
+    <item android:state_pressed="true">
+        <layer-list>
+            <item><shape><gradient android:angle="270" android:startColor="@color/glass_focus_top" android:endColor="@color/glass_focus_bottom" /><corners android:radius="14dp" /></shape></item>
+            <item><shape><stroke android:width="1dp" android:color="@color/glass_focus_rim" /><corners android:radius="14dp" /></shape></item>
+        </layer-list>
+    </item>
+    <item android:state_selected="true">
+        <layer-list>
+            <item><shape><gradient android:angle="270" android:startColor="@color/glass_red_top" android:endColor="@color/glass_red_bottom" /><corners android:radius="14dp" /></shape></item>
+            <item><shape><gradient android:angle="270" android:startColor="#33FFFFFF" android:centerColor="#00FFFFFF" android:centerY="0.5" android:endColor="#00FFFFFF" /><corners android:radius="14dp" /></shape></item>
+            <item><shape><stroke android:width="1dp" android:color="#73FFFFFF" /><corners android:radius="14dp" /></shape></item>
+        </layer-list>
+    </item>
+    <item>
+        <layer-list>
+            <item><shape><gradient android:angle="270" android:startColor="#1AFFFFFF" android:endColor="#0AFFFFFF" /><corners android:radius="14dp" /></shape></item>
+            <item><shape><stroke android:width="1dp" android:color="@color/glass_rim" /><corners android:radius="14dp" /></shape></item>
+        </layer-list>
+    </item>
+</selector>

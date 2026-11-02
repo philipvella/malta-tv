@@ -24,18 +24,30 @@
 
 - **Station buttons** — TVM, NET, ONE, SMASH. The remote's **next / previous** buttons
   (⏭ ⏮ or **P+ / P−**) step through the stations in order.
-- **＋ Add station** — add any web page as your own station (saved on the device).
-  Long-press a custom (★) station to remove it.
-- **Refresh** — reload the current page. Also on the remote's **RED** button.
-- **Full screen** — hide the controls. Also toggled by the remote's **GREEN** button;
-  **BACK** or **MENU** brings the controls back.
+- **Remote colour keys** — the buttons are in the same order as the keys on the remote:
+
+  | Key | Button | Does |
+  |---|---|---|
+  | 🔴 **RED** | Refresh | reload the current page |
+  | 🟢 **GREEN** | Full screen | hide / show the controls (**BACK** or **MENU** also bring them back) |
+  | 🟡 **YELLOW** | Add station | add any web page as your own station (saved on the device); long-press a custom (★) station to remove it |
+  | 🔵 **BLUE** | ⚙ Settings | auto full screen and ad-blocking options (below) |
 - **On-screen mouse pointer** — move into the web page (press DOWN from the buttons) and a
   pointer appears: arrow keys move it (faster the longer you hold), **OK** clicks,
   pushing against the top/bottom edge scrolls the page. It hides itself after 3 seconds.
-- **⚙ Settings** (gear icon) — auto full screen and ad-blocking options (below).
 - **⏻ Exit** (power icon) — close the app.
 - The address strip always shows which web page is loaded.
 - Remembers the last station you watched.
+- **Splash screen** on launch, in the same style as the app icon — *Developed by vellaphilip.com*.
+
+### Look & feel: Liquid Glass
+
+The whole app uses a Liquid Glass style, inspired by Apple's design language: translucent
+glass capsules with specular rims floating over an ambient Malta-red backdrop, bright glass for
+the remote's focus, red-tinted glass for the active station, and glass dialogs, menus, fields,
+toasts and pointer. The TV's Android version (9) has no live background blur, so the glass is
+built from layered translucent gradients and highlight rims. The rules live in
+[`.claude/skills/malta-tv-liquid-glass`](.claude/skills/malta-tv-liquid-glass/SKILL.md).
 
 ### Auto full screen on channel change
 
@@ -113,8 +125,10 @@ See *Build & test* below. Every push to `main` is built by GitHub Actions; pushi
 
 ## Artwork
 
-The app icon and TV banner in [`art/`](art) were generated with AI (Figma AI image generation)
-and resized into the Android resource folders.
+The original icon and TV banner in [`art/`](art) were generated with AI (Figma AI image
+generation). [`scripts/make_glass_art.py`](scripts/make_glass_art.py) cuts the white TV /
+Maltese-cross glyph and the wordmark out of that banner and re-composes them as Liquid Glass
+artwork: the launcher icon, the TV banner and the splash logo (`python3 scripts/make_glass_art.py`).
 
 ## License
 

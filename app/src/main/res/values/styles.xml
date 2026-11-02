@@ -1,37 +1,107 @@
 <resources>
+    <!-- Liquid Glass theme. Rules: .claude/skills/malta-tv-liquid-glass/SKILL.md -->
     <style name="AppTheme" parent="android:Theme.DeviceDefault.NoActionBar">
-        <item name="android:windowBackground">@color/bg</item>
-        <item name="android:colorAccent">@color/btn_active</item>
+        <!-- launch preview = splash environment, so cold start goes red -> splash -> app -->
+        <item name="android:windowBackground">@drawable/bg_splash</item>
+        <item name="android:colorAccent">@color/malta_red</item>
+        <item name="android:alertDialogTheme">@style/GlassDialog</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text_dim</item>
     </style>
 
-    <style name="BarButton">
+    <!-- Capsule glass button in the control bar -->
+    <style name="GlassButton">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:layout_marginEnd">10dp</item>
         <item name="android:minHeight">0dp</item>
         <item name="android:minWidth">0dp</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-        <item name="android:paddingTop">8dp</item>
-        <item name="android:paddingBottom">8dp</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:paddingTop">9dp</item>
+        <item name="android:paddingBottom">9dp</item>
         <item name="android:textSize">15sp</item>
         <item name="android:textAllCaps">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">@color/text</item>
-        <item name="android:background">@drawable/btn_bg</item>
+        <item name="android:drawablePadding">8dp</item>
+        <item name="android:background">@drawable/glass_button</item>
         <item name="android:focusable">true</item>
-        <item name="android:stateListAnimator">@null</item>
+        <item name="android:stateListAnimator">@animator/glass_focus</item>
     </style>
 
-    <!-- Icon-only bar button (Settings, Exit) -->
-    <style name="IconButton">
+    <!-- Round icon-only glass button (Exit) -->
+    <style name="GlassIconButton">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:layout_marginEnd">10dp</item>
         <item name="android:minHeight">0dp</item>
         <item name="android:minWidth">0dp</item>
-        <item name="android:padding">8dp</item>
+        <item name="android:padding">9dp</item>
         <item name="android:scaleType">center</item>
-        <item name="android:background">@drawable/btn_bg</item>
+        <item name="android:background">@drawable/glass_button</item>
         <item name="android:focusable">true</item>
+        <item name="android:stateListAnimator">@animator/glass_focus</item>
+    </style>
+
+    <!-- Every dialog, menu and sub-menu: a floating glass sheet -->
+    <style name="GlassDialog" parent="android:Theme.DeviceDefault.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/glass_sheet</item>
+        <item name="android:windowElevation">0dp</item>
+        <item name="android:backgroundDimAmount">0.5</item>
+        <item name="android:colorBackground">#00000000</item>
+        <item name="android:colorAccent">@color/text</item>
+        <item name="android:colorControlActivated">@color/malta_red</item>
+        <item name="android:colorControlNormal">@color/text_dim</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text_dim</item>
+        <item name="android:textColorAlertDialogListItem">@color/text</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="android:windowTitleStyle">@style/GlassDialogTitle</item>
+        <item name="android:buttonBarButtonStyle">@style/GlassDialogButton</item>
+        <item name="android:listViewStyle">@style/GlassList</item>
+        <item name="android:listChoiceBackgroundIndicator">@drawable/glass_row</item>
+        <item name="android:selectableItemBackground">@drawable/glass_row</item>
+        <item name="android:editTextStyle">@style/GlassField</item>
+    </style>
+
+    <style name="GlassDialogTitle" parent="android:TextAppearance.DeviceDefault.DialogWindowTitle">
+        <item name="android:textColor">@color/text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="GlassDialogButton" parent="android:Widget.DeviceDefault.Button.Borderless">
+        <item name="android:background">@drawable/glass_button</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:minWidth">88dp</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:paddingTop">9dp</item>
+        <item name="android:paddingBottom">9dp</item>
+        <item name="android:layout_marginStart">10dp</item>
+        <item name="android:stateListAnimator">@animator/glass_focus</item>
+    </style>
+
+    <style name="GlassList" parent="android:Widget.DeviceDefault.ListView">
+        <item name="android:listSelector">@drawable/glass_row</item>
+        <item name="android:drawSelectorOnTop">false</item>
+        <item name="android:divider">@null</item>
+        <item name="android:dividerHeight">4dp</item>
+    </style>
+
+    <style name="GlassField" parent="android:Widget.DeviceDefault.EditText">
+        <item name="android:background">@drawable/glass_field</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:layout_marginTop">10dp</item>
     </style>
 </resources>
